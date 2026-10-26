@@ -1,2 +1,9 @@
+data/
+storage/
+logs/
+*.egg-info
+*.py[cod]
 .env
 .venvcodabli
+.vscode/
+__pycache__
