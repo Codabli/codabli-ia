@@ -1,5 +1,26 @@
 # Documentation technique
 
+## Arborescence
+
+```text
+.
+├── archive/                  # Anciens scripts conservés à titre de référence
+├── benchmark_LLM/            # Outils de benchmark
+├── data/
+│   ├── raw/                  # Documents source PDF, DOCX ou TXT
+│   └── processed/            # JSONL extraits et découpés
+├── src/
+│   ├── generation/           # Prompt, client LLM et chaîne RAG
+│   ├── ingestion/            # Chargement, découpage et indexation
+│   ├── retrieval/            # Chargement de l'index et recherche
+│   └── scripts/              # Commandes numérotées du pipeline
+├── storage/chroma/           # Index vectoriel persistant
+├── tests/                    # Tests automatisés
+├── .env                      # Configuration locale, non versionnée
+├── pyproject.toml            # Métadonnées de paquet et configuration Ruff
+└── requirements.txt          # Dépendances Python
+```
+
 ## Prérequis
 
 - Python 3.10 ou version ultérieure.
@@ -167,25 +188,4 @@ Vérifier le code avec Ruff :
 
 ```bash
 ruff check src tests
-```
-
-## Arborescence
-
-```text
-.
-├── archive/                  # Anciens scripts conservés à titre de référence
-├── benchmark_LLM/            # Outils de benchmark
-├── data/
-│   ├── raw/                  # Documents source PDF, DOCX ou TXT
-│   └── processed/            # JSONL extraits et découpés
-├── src/
-│   ├── generation/           # Prompt, client LLM et chaîne RAG
-│   ├── ingestion/            # Chargement, découpage et indexation
-│   ├── retrieval/            # Chargement de l'index et recherche
-│   └── scripts/              # Commandes numérotées du pipeline
-├── storage/chroma/           # Index vectoriel persistant
-├── tests/                    # Tests automatisés
-├── .env                      # Configuration locale, non versionnée
-├── pyproject.toml            # Métadonnées de paquet et configuration Ruff
-└── requirements.txt          # Dépendances Python
 ```
