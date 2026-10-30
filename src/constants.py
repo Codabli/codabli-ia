@@ -3,5 +3,9 @@
 Module de définition des constantes utilisées dans l'application.
 """
 
-DEFAULT_EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt"}
+EMBEDDING_MODEL_IMG = "clip-ViT-B-32"
+EMBEDDING_MODEL_TXT = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+EMBEDDING_MODEL_TXT_TO_IMG = "sentence-transformers/clip-ViT-B-32-multilingual-v1"
+SUPPORTED_EXTENSIONS_IMG = {".png", ".jpg", ".jpeg", ".webp"}
+SUPPORTED_EXTENSIONS_TXT = {".pdf", ".docx", ".txt"}
+SUPPORTED_EXTENSIONS = SUPPORTED_EXTENSIONS_IMG | SUPPORTED_EXTENSIONS_TXT
