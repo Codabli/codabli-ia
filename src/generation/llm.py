@@ -6,17 +6,17 @@ Module de génération de texte à l'aide d'un modèle de langage hébergé par 
 import os
 
 from dotenv import load_dotenv
-from langchain_mistralai import ChatMistralAI
+from langchain_openai import ChatOpenAI
 
 
-def create_llm() -> ChatMistralAI:
+def create_llm() -> ChatOpenAI:
     """
     Initialise le modèle hébergé par OVHcloud AI Endpoints.
 
     Returns
     -------
-    ChatMistralAI
-        Instance du modèle de langage Mistral.
+    ChatOpenAI
+        Instance du modèle de langage Open AI.
 
     Raises
     ------
@@ -43,10 +43,10 @@ def create_llm() -> ChatMistralAI:
     if missing:
         raise RuntimeError("Variables d'environnement manquantes : " + ", ".join(missing))
 
-    return ChatMistralAI(
+    return ChatOpenAI(
         model=model_name,
         api_key=api_key,
-        endpoint=endpoint,
+        base_url=endpoint,
         temperature=0.2,
         max_tokens=1200,
     )
