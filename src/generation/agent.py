@@ -3,13 +3,20 @@
 Configuration de l'assistant et de ses outils.
 """
 
-from src.retrieval.retriever import load_vector_stores
+from langchain_chroma import Chroma
+
+from src.tools.image_generation import create_image_generation_tool
 from src.tools.image_search import create_image_search_tool
 
 
-def create_assistant_tools():
+def create_assistant_tools(vector_stores: dict[str, Chroma]) -> list:
     """
     Initialise les outils disponibles pour l'assistant.
+
+    Parameters
+    ----------
+    vector_stores : dict
+        Vector stores déjà chargés, partagés avec le reste de la chaîne.
 
     Returns
     -------
@@ -17,9 +24,7 @@ def create_assistant_tools():
         Liste des outils utilisables par le LLM.
     """
 
-    vector_stores = load_vector_stores()
-    image_search_tool = create_image_search_tool(vector_stores)
-
     return [
-        image_search_tool,
+        create_image_search_tool(vector_stores),
+        create_image_generation_tool(),
     ]
