@@ -9,21 +9,36 @@ from pathlib import Path
 
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
-from langchain_huggingface import HuggingFaceEmbeddings
 
-from src.constants import DEFAULT_EMBEDDING_MODEL
+from src.ingestion.encoders import BaseEncoder, ImageEncoder, TextEncoder
 
 
 def create_vector_store(
     documents: list[Document],
     persist_directory: str | Path = "storage/chroma",
     collection_name: str = "conte_danse",
-    embedding_model: str = DEFAULT_EMBEDDING_MODEL,
     batch_size: int = 64,
     rebuild: bool = True,
-) -> Chroma:
+) -> dict[str, Chroma]:
     """
-    Calcule les embeddings et crée ou met à jour l'index Chroma.
+    Crée ou met à jour les collections vectorielles Chroma à partir de documents.
+
+    Cette fonction prend en charge deux types de médias : les textes et les images.
+    Chaque type de média est indexé dans une collection Chroma distincte afin
+    d'utiliser un encodeur adapté à la nature des données.
+
+    Le traitement comprend plusieurs étapes :
+    - Identification des types de médias présents dans les documents.
+    - Initialisation des encodeurs nécessaires (TextEncoder et ImageEncoder).
+    - Création des collections Chroma correspondantes.
+    - Génération des embeddings par lots pour limiter l'utilisation de la mémoire.
+    - Insertion ou mise à jour des documents et de leurs embeddings dans Chroma.
+
+    Les documents textuels vides sont ignorés. Pour les images, le chemin du
+    fichier est récupéré depuis les métadonnées du document.
+
+    Les identifiants des chunks sont générés à partir de leur contenu et de
+    leurs métadonnées afin de garantir leur unicité dans chaque collection.
 
     Parameters
     ----------
@@ -33,8 +48,6 @@ def create_vector_store(
         Répertoire où stocker l'index Chroma.
     collection_name : str, default="conte_danse"
         Nom de la collection Chroma.
-    embedding_model : str, default=DEFAULT_EMBEDDING_MODEL
-        Nom du modèle d'embeddings à utiliser.
     batch_size : int, default=64
         Nombre de documents à traiter par lot pour l'indexation.
     rebuild : bool, default=True
@@ -42,13 +55,25 @@ def create_vector_store(
 
     Returns
     -------
-    Chroma
-        Instance de la collection Chroma créée ou mise à jour.
+    dict[str, Chroma]
+        Dictionnaire contenant les instances des collections Chroma créées
+        ou mises à jour.
+
+        Les clés possibles sont :
+        - "text" : collection contenant les embeddings textuels.
+        - "image" : collection contenant les embeddings des images.
+
+        Seuls les types de médias présents dans les documents sont retournés.
 
     Raises
     ------
     ValueError
-        Si batch_size est inférieur ou égal à zéro.
+        Si 'batch_size' est inférieur ou égal à zéro.
+        Si plusieurs documents d'un même type de média possèdent le même
+        identifiant de chunk.
+    KeyError
+        Si les métadonnées d'un document image ne contiennent pas la clé
+        'file_path'.
     """
     if batch_size <= 0:
         raise ValueError("batch_size doit être strictement positif.")
@@ -56,116 +81,80 @@ def create_vector_store(
     persist_path = Path(persist_directory)
     persist_path.mkdir(parents=True, exist_ok=True)
 
-    embeddings = HuggingFaceEmbeddings(
-        model_name=embedding_model,
-        model_kwargs={"device": "cpu"},
-        encode_kwargs={"normalize_embeddings": True},
-    )
+    collection_names = {
+        "text": f"{collection_name}_text",
+        "image": f"{collection_name}_image",
+    }
 
-    if rebuild:
-        # Reconstruction complète : évite de conserver des chunks supprimés
-        # depuis le dernier index.
-        vector_store = Chroma(
-            collection_name=collection_name,
-            embedding_function=embeddings,
+    # Ne charger que les encodeurs nécessaires.
+    encoders: dict[str, BaseEncoder] = {}
+    for media_type in ("text", "image"):
+        if any(
+            document.metadata.get("media_type", "text") == media_type
+            and (media_type == "image" or bool(document.page_content.strip()))
+            for document in documents
+        ):
+            if media_type == "text":
+                encoders[media_type] = TextEncoder(device="cpu")
+            else:
+                encoders[media_type] = ImageEncoder(device="cpu")
+
+    stores = {}
+
+    for media_type, encoder in encoders.items():
+        collection = collection_names[media_type]
+
+        media_documents = [
+            document
+            for document in documents
+            if document.metadata.get("media_type", "text") == media_type
+            and (media_type == "image" or bool(document.page_content.strip()))
+        ]
+
+        ids = [make_chunk_id(document) for document in media_documents]
+
+        if len(ids) != len(set(ids)):
+            raise ValueError(f"Des identifiants sont dupliqués dans les médias : {media_type}")
+
+        if rebuild:
+            existing = Chroma(
+                collection_name=collection,
+                persist_directory=str(persist_path),
+            )
+            existing.delete_collection()
+
+        store = Chroma(
+            collection_name=collection,
             persist_directory=str(persist_path),
-        )
-        vector_store.delete_collection()
-
-    vector_store = Chroma(
-        collection_name=collection_name,
-        embedding_function=embeddings,
-        persist_directory=str(persist_path),
-        collection_metadata={"hnsw:space": "cosine"},
-    )
-
-    ids = [make_chunk_id(document) for document in documents]
-
-    if len(ids) != len(set(ids)):
-        raise ValueError(
-            "Des identifiants de chunks sont dupliqués. Vérifiez les sources, pages et positions "
-            "des chunks."
+            embedding_function=None,
+            collection_metadata={"hnsw:space": "cosine"},
         )
 
-    # Chroma ne prend pas en charge tous les types de métadonnées.
-    # Nous conservons les valeurs simples et ignorons les valeurs nulles.
-    for document in documents:
-        document.metadata = {
-            key: value
-            for key, value in document.metadata.items()
-            if value is not None and isinstance(value, (str, int, float, bool))
-        }
+        for start in range(0, len(media_documents), batch_size):
+            batch = media_documents[start : start + batch_size]
+            batch_ids = ids[start : start + batch_size]
 
-    for start in range(0, len(documents), batch_size):
-        batch_documents = documents[start : start + batch_size]
-        batch_ids = ids[start : start + batch_size]
+            if media_type == "text":
+                contents = [document.page_content for document in batch]
+                embeddings = encoder.encode(contents)
+            else:
+                paths = [document.metadata["file_path"] for document in batch]
+                embeddings = encoder.encode(paths)
+                contents = [
+                    document.page_content or document.metadata.get("filename", path)
+                    for document, path in zip(batch, paths)
+                ]
 
-        vector_store.add_documents(
-            documents=batch_documents,
-            ids=batch_ids,
-        )
+            store._collection.upsert(
+                ids=batch_ids,
+                embeddings=embeddings.tolist(),
+                documents=contents,
+                metadatas=[document.metadata for document in batch],
+            )
 
-    return vector_store
+        stores[media_type] = store
 
-
-def load_chunks(input_path: str | Path) -> list[Document]:
-    """
-    Recharge les chunks produits à l'étape précédente.
-
-    Parameters
-    ----------
-    input_path : str | Path
-        Chemin vers le fichier JSONL contenant les chunks.
-
-    Returns
-    -------
-    list[Document]
-        Liste de documents représentant les chunks.
-
-    Raises
-    ------
-    FileNotFoundError
-        Si le fichier de chunks n'existe pas.
-    ValueError
-        Si le fichier est vide ou contient des chunks invalides.
-    """
-    path = Path(input_path)
-
-    if not path.exists():
-        raise FileNotFoundError(f"Fichier de chunks introuvable : {path}")
-
-    documents = []
-
-    with path.open("r", encoding="utf-8") as file:
-        for line_number, line in enumerate(file, start=1):
-            if not line.strip():
-                continue
-
-            try:
-                record = json.loads(line)
-                content = record["page_content"]
-                metadata = record["metadata"]
-
-                if not isinstance(content, str) or not content.strip():
-                    continue
-
-                if not isinstance(metadata, dict):
-                    raise ValueError("Les métadonnées doivent être un objet.")
-
-                documents.append(
-                    Document(
-                        page_content=content,
-                        metadata=metadata,
-                    )
-                )
-
-            except (json.JSONDecodeError, KeyError, ValueError) as exc:
-                raise ValueError(f"Chunk invalide à la ligne {line_number}") from exc
-
-    if not documents:
-        raise ValueError("Aucun chunk exploitable trouvé.")
-
-    return documents
+    return stores
 
 
 def make_chunk_id(document: Document) -> str:
@@ -186,6 +175,7 @@ def make_chunk_id(document: Document) -> str:
         "source": document.metadata.get("source", ""),
         "page": document.metadata.get("page", ""),
         "start_index": document.metadata.get("start_index", ""),
+        "file_path": document.metadata.get("file_path", ""),
         "content": document.page_content,
     }
 
