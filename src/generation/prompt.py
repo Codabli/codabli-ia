@@ -3,7 +3,7 @@
 Module de gestion des prompts pour la génération de texte.
 """
 
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 SYSTEM_PROMPT = """
 Tu es l'assistant pédagogique « Créer mon Conte Dansé® ». Tu accompagnes une classe et son
@@ -90,6 +90,7 @@ Extraits documentaires :
 RAG_PROMPT = ChatPromptTemplate.from_messages(
     [
         ("system", SYSTEM_PROMPT),
+        # MessagesPlaceholder(variable_name="history"),
         ("human", "Répondez à la question en respectant les règles ci-dessus."),
     ]
 )

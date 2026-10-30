@@ -22,13 +22,13 @@ model = ChatMistralAI(
 )
 
 # Load Documents
-pdf_loader = PyPDFDirectoryLoader(directory)
+pdf_loader = PyPDFDirectoryLoader("data/raw/0i9zw2dofcjd3qw.pdf")
 pdf_docs = pdf_loader.load()
 
-text_loader = DirectoryLoader(directory,glob="**/*.txt", loader_cls=TextLoader)
-text_docs = text_loader.load()
+# text_loader = DirectoryLoader(directory,glob="**/*.txt", loader_cls=TextLoader)
+# text_docs = text_loader.load()
 
-docs = pdf_docs + text_docs
+docs = pdf_docs
 
 
 
