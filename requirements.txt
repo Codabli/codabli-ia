@@ -5,6 +5,7 @@ langchain-text-splitters
 langchain-chroma
 langchain-huggingface
 langchain-mistralai
+langchain-openai
 ruff
 sentence-transformers
 pillow
