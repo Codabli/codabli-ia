@@ -8,23 +8,21 @@ python src/scripts/02_chunk_documents.py
 
 Arguments
 ---------
---input : str, default="data/raw"
-    Fichier JSONL issu de l'ingestion (par défaut : data/processed/documents.jsonl)
---output : str, default="data/processed/chunks.jsonl"
-    Fichier JSONL des chunks (par défaut : data/processed/chunks.jsonl)
---chunk-size : int, default=600
-    Taille maximale d'un chunk (par défaut : 600 caractères)
 --chunk-overlap : int, default=100
-    Chevauchement entre les chunks (par défaut : 100 caractères)
+    Nombre de caractères pour le chevauchement entre les chunks
+--chunk-size : int, default=600
+    Taille maximale de caractères d'un chunk
+--input : str, default="data/processed/documents.jsonl"
+    Fichier JSONL issu de l'ingestion
+--output : str, default="data/processed/chunks.jsonl"
+    Fichier JSONL des chunks
 """
 
 import argparse
 import json
 from pathlib import Path
 
-from langchain_core.documents import Document
-
-from src.ingestion.chunking import split_documents
+from src.ingestion.chunking import load_chunks, split_documents
 from src.scripts import LOGGER
 
 
@@ -52,23 +50,7 @@ def main() -> None:
     if not input_path.exists():
         raise FileNotFoundError(f"Fichier d'entrée introuvable : {input_path}")
 
-    documents = []
-
-    with input_path.open("r", encoding="utf-8") as input_file:
-        for line_number, line in enumerate(input_file, start=1):
-            if not line.strip():
-                continue
-
-            try:
-                record = json.loads(line)
-                documents.append(
-                    Document(
-                        page_content=record["page_content"],
-                        metadata=record["metadata"],
-                    )
-                )
-            except (json.JSONDecodeError, KeyError) as exc:
-                raise ValueError(f"Entrée invalide à la ligne {line_number}") from exc
+    documents = load_chunks(input_path)
 
     if not documents:
         raise ValueError("Aucun document exploitable dans le fichier.")
