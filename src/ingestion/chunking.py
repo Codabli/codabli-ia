@@ -3,8 +3,62 @@
 Module de découpage de documents en chunks.
 """
 
+import json
+from pathlib import Path
+
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+
+def load_chunks(input_path: str | Path) -> list[Document]:
+    """
+    Charge les documents depuis un fichier JSONL.
+
+    Conserve les images même si leur contenu textuel est vide et ignore
+    les documents textuels dont le contenu est vide.
+    """
+    path = Path(input_path)
+
+    if not path.exists():
+        raise FileNotFoundError(f"Fichier introuvable : {path}")
+
+    documents = []
+
+    with path.open("r", encoding="utf-8") as file:
+        for line_number, line in enumerate(file, start=1):
+            if not line.strip():
+                continue
+
+            try:
+                record = json.loads(line)
+                content = record["page_content"]
+                metadata = record["metadata"]
+
+                if not isinstance(content, str):
+                    raise ValueError("Le contenu doit être une chaîne de caractères.")
+
+                if not isinstance(metadata, dict):
+                    raise ValueError("Les métadonnées doivent être un objet.")
+
+                media_type = metadata.get("media_type")
+
+                if media_type == "text" and not content.strip():
+                    continue
+
+                documents.append(
+                    Document(
+                        page_content=content,
+                        metadata=metadata,
+                    )
+                )
+
+            except (json.JSONDecodeError, KeyError, ValueError) as exc:
+                raise ValueError(f"Document invalide à la ligne {line_number} de {path}") from exc
+
+    if not documents:
+        raise ValueError(f"Aucun document exploitable trouvé dans {path}.")
+
+    return documents
 
 
 def split_documents(
@@ -44,7 +98,9 @@ def split_documents(
         add_start_index=True,
     )
 
+    empty_documents = [doc for doc in documents if not doc.page_content.strip()]
     chunks = splitter.split_documents(documents)
+    chunks.extend(empty_documents)
 
     # Ajoute un identifiant stable pour chaque position dans le lot.
     # Pour une indexation incrémentale, il faudra ensuite stabiliser
