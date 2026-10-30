@@ -1,6 +1,6 @@
 """05_ask.py
 
-Script de question-réponse utilisant le RAG Conte Dansé.
+Script de question-réponse utilisant l'assistant Conte Dansé.
 
 Commande
 --------
@@ -10,40 +10,31 @@ Arguments
 ---------
 question : str
     Question à poser à l'assistant RAG.
--k : int, default=4
-    Nombre de passages à retourner pour la génération de la réponse (défaut : 4).
 """
 
 import argparse
 
-from src.generation.rag_chain import answer_question
+from src.generation.chain import run_assistant
 from src.scripts import LOGGER
+from src.utils.common import save_output
 
 
-def main() -> None:
-    """
-    Point d'entrée du script de question-réponse.
-    """
-    parser = argparse.ArgumentParser(description="Pose une question à l'assistant RAG.")
-    parser.add_argument("question", help="Question à poser.")
-    parser.add_argument("-k", type=int, default=4)
+def main():
+    parser = argparse.ArgumentParser(description="Interroger l'assistant Conte Dansé.")
+
+    parser.add_argument("question", type=str, help="Question à poser à l'assistant.")
+
     args = parser.parse_args()
+    question = args.question
 
-    result = answer_question(args.question, k=args.k)
+    LOGGER.info("Question reçue : %s", question)
 
-    LOGGER.info("\nQUESTION\n%s", result["question"])
+    result = run_assistant(question)
+    answer, tool_results = result["answer"], result["tool_results"]
+    output_path = save_output(question=question, answer=answer, tool_results=tool_results)
 
-    LOGGER.info("\nRÉPONSE\n%s", result["answer"])
-
-    LOGGER.info("\nSOURCES RETROUVÉES")
-    for source in result["sources"]:
-        LOGGER.info(
-            "[%s] %s | page : %s | distance : %.4f",
-            source["id"],
-            source["source"],
-            source["page"],
-            source["distance"],
-        )
+    LOGGER.info("Résultats enregistrés dans : %s", output_path)
+    LOGGER.info("Réponse : %s", answer)
 
 
 if __name__ == "__main__":
