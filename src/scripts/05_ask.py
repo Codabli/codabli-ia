@@ -27,9 +27,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Pose une question à l'assistant RAG.")
     parser.add_argument("question", help="Question à poser.")
     parser.add_argument("-k", type=int, default=4)
+    parser.add_argument("--generate_image", type=bool, default=False)
     args = parser.parse_args()
 
-    result = answer_question(args.question, k=args.k)
+    result = answer_question(args.question, k=args.k, image=args.generate_image)
 
     LOGGER.info("\nQUESTION\n%s", result["question"])
 

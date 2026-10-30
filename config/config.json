@@ -1,0 +1,13 @@
+{
+    "raw_directory" : "raw/",
+    "data_directory" : "data/",
+    "history": "history/",
+    "document" :"documents.jsonl",
+    "processed" : "processed/",
+    "chunks" :"chunks.jsonl",
+    "storage_directory" : "storage/",
+    "chroma_directory" : "chroma/",
+    "conversation" : "conversation_{}.json",
+    "output" : "output/",
+    "generate_image" : "generate_image_{}.png"
+}

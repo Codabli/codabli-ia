@@ -4,7 +4,7 @@ Module de génération de texte à l'aide d'un modèle de langage hébergé par 
 """
 
 import os
-
+import requests
 from dotenv import load_dotenv
 from langchain_mistralai import ChatMistralAI
 
@@ -50,3 +50,30 @@ def create_llm() -> ChatMistralAI:
         temperature=0.2,
         max_tokens=1200,
     )
+
+
+
+def generate_image(prompt: str) -> bytes:
+    load_dotenv()
+
+    token = os.getenv("OVH_AI_ENDPOINTS_ACCESS_TOKEN")
+    endpoint = os.getenv("OVH_AI_ENDPOINTS_IMAGE_URL")
+
+    if not token or not endpoint:
+        raise RuntimeError(
+            "OVH_AI_ENDPOINTS_ACCESS_TOKEN et OVH_AI_ENDPOINTS_IMAGE_URL "
+            "doivent être définies."
+        )
+
+    response = requests.post(
+        endpoint,
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "model": "stable-diffusion-xl-base-v10",
+            "prompt": prompt,
+        },
+        timeout=120,
+    )
+    response.raise_for_status()
+    
+    return response.content
