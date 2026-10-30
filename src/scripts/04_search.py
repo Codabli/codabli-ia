@@ -11,12 +11,14 @@ Arguments
 question : str
     Question à rechercher dans les documents.
 -k : int, default=4
-    Nombre de passages à retourner (défaut : 4).
+    Nombre de passages à retourner.
+--media-types, default=[text, image]
+    Types de médias à rechercher : text, image, ou les deux.
 """
 
 import argparse
 
-from src.retrieval.retriever import load_vector_store, search_documents
+from src.retrieval.retriever import load_vector_stores, search_documents
 from src.scripts import LOGGER
 
 
@@ -37,13 +39,18 @@ def main() -> None:
         default=4,
         help="Nombre de passages à retourner (défaut : 4).",
     )
+    parser.add_argument(
+        "--media-types",
+        nargs="+",
+        choices=["text", "image"],
+        default=["text", "image"],
+        help=("Types de médias à rechercher : text, image, ou les deux (défaut : text image)."),
+    )
     args = parser.parse_args()
 
-    vector_store = load_vector_store()
+    vector_stores = load_vector_stores()
     results = search_documents(
-        query=args.question,
-        vector_store=vector_store,
-        k=args.k,
+        query=args.question, vector_stores=vector_stores, k=args.k, media_types=args.media_types
     )
 
     LOGGER.info("\nQuestion : %s", args.question)
