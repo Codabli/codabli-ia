@@ -30,8 +30,14 @@ def main():
     LOGGER.info("Question reçue : %s", question)
 
     result = run_assistant(question)
-    answer, tool_results = result["answer"], result["tool_results"]
-    output_path = save_output(question=question, answer=answer, tool_results=tool_results)
+    answer = result["answer"]
+
+    output_path = save_output(
+        question=question,
+        answer=answer,
+        tool_results=result["tool_results"],
+        sources=result["sources"],
+    )
 
     LOGGER.info("Résultats enregistrés dans : %s", output_path)
     LOGGER.info("Réponse : %s", answer)
