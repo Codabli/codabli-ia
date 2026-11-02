@@ -43,7 +43,7 @@ def create_image_search_tool(vector_stores: dict[str, Any]) -> BaseTool:
         results = search_documents(
             query=query,
             vector_stores=vector_stores,
-            k=5,
+            k=2,
             media_types=["image"],
         )
 
