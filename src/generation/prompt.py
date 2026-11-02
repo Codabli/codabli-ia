@@ -3,7 +3,7 @@
 Module de gestion des prompts pour la génération de texte.
 """
 
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import ChatPromptTemplate
 
 SYSTEM_PROMPT = """
 Tu es l'assistant pédagogique « Créer mon Conte Dansé® ». Tu accompagnes une classe et son
