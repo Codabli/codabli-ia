@@ -6,5 +6,6 @@ logs/
 .env
 .venvcodabli
 .vscode/
+.DS_Store
 __pycache__
 output
