@@ -50,6 +50,13 @@ langage dans `.env` :
 python src/scripts/05_ask.py "Votre question"
 ```
 
+
+Discussion avec Codabli IA :
+
+```bash
+python src/scripts/06_chat.py
+```
+
 Les formats source acceptés sont PDF, DOCX, TXT et images PNG, JPG, JPEG ou
 WEBP. Attention : l'indexation reconstruit les collections existantes. Voir
 [`docs/G-mise-a-jour-des-donnees.md`](./docs/G-mise-a-jour-des-donnees.md)

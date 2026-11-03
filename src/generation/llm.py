@@ -27,14 +27,14 @@ def create_llm() -> ChatOpenAI:
     load_dotenv()
 
     api_key = os.getenv("OVH_AI_ENDPOINTS_ACCESS_TOKEN")
-    model_name = os.getenv("OVH_AI_ENDPOINTS_MODEL_NAME")
+    model_name = os.getenv("OVH_AI_ENDPOINTS_LLAMA")
     endpoint = os.getenv("OVH_AI_ENDPOINTS_URL")
 
     missing = [
         name
         for name, value in {
             "OVH_AI_ENDPOINTS_ACCESS_TOKEN": api_key,
-            "OVH_AI_ENDPOINTS_MODEL_NAME": model_name,
+            "OVH_AI_ENDPOINTS_LLAMA": model_name,
             "OVH_AI_ENDPOINTS_URL": endpoint,
         }.items()
         if not value
@@ -48,5 +48,5 @@ def create_llm() -> ChatOpenAI:
         api_key=api_key,
         base_url=endpoint,
         temperature=0.2,
-        max_tokens=1200,
+        max_tokens=1024,
     )

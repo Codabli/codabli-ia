@@ -9,6 +9,7 @@ variables dans un fichier `.env` à la racine du dépôt :
 |---|---|
 | `OVH_AI_ENDPOINTS_ACCESS_TOKEN` | Jeton d'accès à l'API |
 | `OVH_AI_ENDPOINTS_MODEL_NAME` | Nom du modèle configuré |
+| `OVH_AI_ENDPOINTS_LLAMA=Meta` | Modèle META LLAMA OVH : Meta-Llama-3_3-70B-Instruct |
 | `OVH_AI_ENDPOINTS_URL` | URL de l'endpoint de génération de texte |
 
 L'outil de génération d'images attend également :
